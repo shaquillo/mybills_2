@@ -31,7 +31,7 @@ class ClientViewset(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.U
                 if client.is_valid():
                     client = client.create(validated_data=client.validated_data)
                     result['data'] = serializers.ClientSerializer(client).data
-                    result['data']['user']['username'] = result['data']['user']['username'][2:]
+                    # result['data']['user']['username'] = result['data']['user']['username'][2:]
                     result['error'] = False
                     creation_status = status.HTTP_200_OK
                 else:
@@ -57,7 +57,7 @@ class ClientViewset(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.U
             client = self.get_object()
             client_serializer = self.get_serializer(client)
             result['data'] = client_serializer.data
-            result['data']['user']['username'] = result['data']['user']['username'][2:]
+            # result['data']['user']['username'] = result['data']['user']['username'][2:]
             result['error'] = False
             return Response(result, status=status.HTTP_200_OK)
         except models.Client.DoesNotExist:
@@ -141,7 +141,7 @@ class WorkerViewset(viewsets.ModelViewSet):
                 if worker.is_valid():
                     worker = worker.create(validated_data=worker.validated_data)
                     result['data'] = serializers.WorkerSerializer(worker).data
-                    result['data']['user']['username'] = result['data']['user']['username'][2:]
+                    # result['data']['user']['username'] = result['data']['user']['username'][2:]
                     result['error'] = False
                     creation_status = status.HTTP_200_OK
                 else:
@@ -166,7 +166,7 @@ class WorkerViewset(viewsets.ModelViewSet):
             worker = self.get_object()
             worker_serializer = self.get_serializer(worker)
             result['data'] = worker_serializer.data
-            result['data']['user']['username'] = result['data']['user']['username'][2:]
+            # result['data']['user']['username'] = result['data']['user']['username'][2:]
             result['error'] = False
             return Response(result, status=status.HTTP_200_OK)
         except models.Worker.DoesNotExist:
@@ -183,8 +183,8 @@ class WorkerViewset(viewsets.ModelViewSet):
             workers = self.get_queryset()
             worker_serializer = serializers.WorkerSerializer(workers, many=True)
             result['data'] = worker_serializer.data
-            for i in range(len(result['data'])):
-                result['data'][i]['user']['username'] = result['data'][i]['user']['username'][2:]
+            # for i in range(len(result['data'])):
+            #     result['data'][i]['user']['username'] = result['data'][i]['user']['username'][2:]
             return Response(result, status=status.HTTP_200_OK)
         except Exception:
             result['code'] = '05'
