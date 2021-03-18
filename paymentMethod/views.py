@@ -7,5 +7,5 @@ from . import serializers, models
 # Create your views here.
 
 class PaymentMethodViewset(viewsets.ModelViewSet):
-    serializer_class = serializers.PaymentMethodSerializer()
+    serializer_class = serializers.PaymentMethodSerializer
     queryset = models.PaymentMethod.objects.all()

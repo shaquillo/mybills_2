@@ -34,13 +34,13 @@ class ClientViewset(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.U
                     creation_status = status.HTTP_200_OK
                 else:
                     result['code'] = '01'
-                    result['data'] = 'client data is invalid'
+                    result['data'] = 'invalid client'
                     user.delete()
                     creation_status = status.HTTP_500_INTERNAL_SERVER_ERROR
                 return Response(result, status=creation_status)
             else:
                 result['code'] = '01'
-                result['data'] = 'user data is invalid'
+                result['data'] = 'invalid user'
                 return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception:
             result['code'] = '05'
@@ -57,6 +57,9 @@ class ClientViewset(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.U
             result['data'] = client_serializer.data
             result['error'] = False
             return Response(result, status=status.HTTP_200_OK)
+        except models.Client.DoesNotExist:
+            result['code'] = '03'
+            return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception:
             result['code'] = '05'
             return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -137,13 +140,13 @@ class WorkerViewset(viewsets.ModelViewSet):
                     creation_status = status.HTTP_200_OK
                 else:
                     result['code'] = '01'
-                    result['data'] = 'worker data is invalid'
+                    result['data'] = 'invalid worker'
                     user.delete()
                     creation_status = status.HTTP_500_INTERNAL_SERVER_ERROR
                 return Response(result, status=creation_status)
             else:
                 result['code'] = '01'
-                result['data'] = 'user data is invalid'
+                result['data'] = 'invalid user'
                 return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception:
             if user and isinstance(user, User):
@@ -159,6 +162,9 @@ class WorkerViewset(viewsets.ModelViewSet):
             result['data'] = worker_serializer.data
             result['error'] = False
             return Response(result, status=status.HTTP_200_OK)
+        except models.Worker.DoesNotExist:
+            result['code'] = '03'
+            return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception:
             result['code'] = '05'
             return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -268,7 +274,6 @@ class SubscriptionViewset(viewsets.ModelViewSet):
             instance = models.Subscription.objects.get(pk=kwargs['pk'])
             serializer = serializers.SubscriptionSerializer(instance=instance, data=self.request.data)
             if serializer.is_valid():
-                serializer.update(instance=instance, validated_data=serializer.validated_data)
                 object = serializer.update(instance=instance, validated_data=serializer.validated_data)
                 result['error'] = False
                 result['data'] = serializers.SubscriptionSerializer(object).data

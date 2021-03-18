@@ -2,6 +2,6 @@ from django.contrib import admin
 from . import models
 
 # Register your models here.
-admin.register(models.Client)
-admin.register(models.Worker)
-admin.register(models.Subscription)
+admin.site.register(models.Client)
+admin.site.register(models.Worker)
+admin.site.register(models.Subscription)

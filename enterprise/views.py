@@ -9,7 +9,3 @@ class EnterpriseViewset(viewsets.ModelViewSet):
     serializer_class = serializers.EnterpriseSerializer
     queryset = models.Enterprise.objects.all()
 
-
-class EnterprisePaymentViewset(viewsets.ModelViewSet):
-    serializer_class = serializers.EnterprisePaymentMethodSerializer
-    queryset = models.EnterprisePaymentMethod.objects.all()
