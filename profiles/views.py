@@ -16,14 +16,15 @@ class ClientViewset(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.U
     @transaction.atomic
     def create(self, request, *args, **kwargs):
         result = {"error": True}
+        user = None
 
         try:
+            if User.objects.filter(username=self.request.data['user']['username']).exists():
+                result['code'] = '04'
+                result['data'] = 'Account with username :' + self.request.data['user']['username'] + ' exists'
+                return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             user = serializers.UserClientSerializer(data=self.request.data['user'])
             if user.is_valid():
-                if User.objects.filter(username=user.validated_data['username']).exists():
-                    result['code'] = '04'
-                    result['data'] = 'Account with username :' + user.validated_data['username'] + 'exists'
-                    return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                 user = user.create(validated_data=user.validated_data)
                 client = serializers.ClientSerializer(data={'tel': self.request.data['tel'], 'user': user.id})
                 if client.is_valid():
@@ -33,14 +34,18 @@ class ClientViewset(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.U
                     creation_status = status.HTTP_200_OK
                 else:
                     result['code'] = '01'
+                    result['data'] = 'client data is invalid'
                     user.delete()
                     creation_status = status.HTTP_500_INTERNAL_SERVER_ERROR
                 return Response(result, status=creation_status)
             else:
                 result['code'] = '01'
+                result['data'] = 'user data is invalid'
                 return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception:
             result['code'] = '05'
+            if user and isinstance(user, User):
+                user.delete()
             return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def retrieve(self, request, *args, **kwargs):
@@ -114,8 +119,13 @@ class WorkerViewset(viewsets.ModelViewSet):
     @transaction.atomic
     def create(self, request, *args, **kwargs):
         result = {"error": True}
+        user = None
 
         try:
+            if User.objects.filter(username=self.request.data['user']['username']).exists():
+                result['code'] = '04'
+                result['data'] = 'Account with username :' + self.request.data['user']['username'] + 'exists'
+                return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             user = serializers.UserClientSerializer(data=self.request.data['user'])
             if user.is_valid():
                 user = user.create(validated_data=user.validated_data)
@@ -127,13 +137,17 @@ class WorkerViewset(viewsets.ModelViewSet):
                     creation_status = status.HTTP_200_OK
                 else:
                     result['code'] = '01'
+                    result['data'] = 'worker data is invalid'
                     user.delete()
                     creation_status = status.HTTP_500_INTERNAL_SERVER_ERROR
                 return Response(result, status=creation_status)
             else:
                 result['code'] = '01'
+                result['data'] = 'user data is invalid'
                 return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception:
+            if user and isinstance(user, User):
+                user.delete()
             result['code'] = '05'
 
     def retrieve(self, request, *args, **kwargs):
