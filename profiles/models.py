@@ -19,6 +19,7 @@ class Client(models.Model):
 class Worker(models.Model):
     tel = models.CharField(max_length=9)
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    is_admin = models.BooleanField(default=False)
     #image = models.ImageField()
     enterprise = models.ForeignKey(Enterprise, on_delete=models.CASCADE)
 

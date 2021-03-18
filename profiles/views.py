@@ -19,9 +19,10 @@ class ClientViewset(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.U
         user = None
 
         try:
+            self.request.data['user']['username'] = 'c_' + self.request.data['user']['username']
             if User.objects.filter(username=self.request.data['user']['username']).exists():
                 result['code'] = '04'
-                result['data'] = 'Account with username :' + self.request.data['user']['username'] + ' exists'
+                result['data'] = 'Account with username :' + self.request.data['user']['username'][2:] + ' exists'
                 return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             user = serializers.UserClientSerializer(data=self.request.data['user'])
             if user.is_valid():
@@ -30,6 +31,7 @@ class ClientViewset(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.U
                 if client.is_valid():
                     client = client.create(validated_data=client.validated_data)
                     result['data'] = serializers.ClientSerializer(client).data
+                    result['data']['user']['username'] = result['data']['user']['username'][2:]
                     result['error'] = False
                     creation_status = status.HTTP_200_OK
                 else:
@@ -55,6 +57,7 @@ class ClientViewset(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.U
             client = self.get_object()
             client_serializer = self.get_serializer(client)
             result['data'] = client_serializer.data
+            result['data']['user']['username'] = result['data']['user']['username'][2:]
             result['error'] = False
             return Response(result, status=status.HTTP_200_OK)
         except models.Client.DoesNotExist:
@@ -69,6 +72,7 @@ class ClientViewset(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.U
         result = {"error": True}
 
         try:
+            self.request.data['user']['username'] = 'c_' + self.request.data['user']['username']
             user1 = User.objects.get_by_natural_key(username=self.request.data['user']['username'])
             user = serializers.UserClientSerializer(instance=user1, data=self.request.data['user'])
             if user.is_valid():
@@ -125,9 +129,10 @@ class WorkerViewset(viewsets.ModelViewSet):
         user = None
 
         try:
+            self.request.data['user']['username'] = 'w_' + self.request.data['user']['username']
             if User.objects.filter(username=self.request.data['user']['username']).exists():
                 result['code'] = '04'
-                result['data'] = 'Account with username :' + self.request.data['user']['username'] + 'exists'
+                result['data'] = 'Account with username :' + self.request.data['user']['username'][2:] + ' exists'
                 return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             user = serializers.UserClientSerializer(data=self.request.data['user'])
             if user.is_valid():
@@ -135,7 +140,8 @@ class WorkerViewset(viewsets.ModelViewSet):
                 worker = serializers.WorkerSerializer(data={'tel': self.request.data['tel'], 'user': user.id, 'enterprise': self.request.data['enterprise']})
                 if worker.is_valid():
                     worker = worker.create(validated_data=worker.validated_data)
-                    result['data'] = serializers.ClientSerializer(worker).data
+                    result['data'] = serializers.WorkerSerializer(worker).data
+                    result['data']['user']['username'] = result['data']['user']['username'][2:]
                     result['error'] = False
                     creation_status = status.HTTP_200_OK
                 else:
@@ -160,6 +166,7 @@ class WorkerViewset(viewsets.ModelViewSet):
             worker = self.get_object()
             worker_serializer = self.get_serializer(worker)
             result['data'] = worker_serializer.data
+            result['data']['user']['username'] = result['data']['user']['username'][2:]
             result['error'] = False
             return Response(result, status=status.HTTP_200_OK)
         except models.Worker.DoesNotExist:
@@ -169,11 +176,27 @@ class WorkerViewset(viewsets.ModelViewSet):
             result['code'] = '05'
             return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    def list(self, request, *args, **kwargs):
+        result = {"error": False}
+
+        try:
+            workers = self.get_queryset()
+            worker_serializer = serializers.WorkerSerializer(workers, many=True)
+            result['data'] = worker_serializer.data
+            for i in range(len(result['data'])):
+                result['data'][i]['user']['username'] = result['data'][i]['user']['username'][2:]
+            return Response(result, status=status.HTTP_200_OK)
+        except Exception:
+            result['code'] = '05'
+            result['error'] = False
+            return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     @transaction.atomic
     def update(self, request, *args, **kwargs):
         result = {"error": True}
 
         try:
+            self.request.data['user']['username'] = 'w_' + self.request.data['user']['username']
             user1 = User.objects.get_by_natural_key(username=self.request.data['user']['username'])
             user = serializers.UserClientSerializer(instance=user1, data=self.request.data['user'])
             if user.is_valid():

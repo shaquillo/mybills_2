@@ -1,12 +1,13 @@
 from .models import Client, Worker, Subscription
 from rest_framework import serializers
 from django.contrib.auth.models import User
+from enterprise.serializers import EnterpriseSerializer
 
 
 class UserClientSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'email', 'username', 'password']
+        fields = ['first_name', 'last_name', 'email', 'username', 'password']
         extra_kwargs = {
             'password' : {'write_only': True}
         }
@@ -15,7 +16,7 @@ class UserClientSerializer(serializers.ModelSerializer):
 class UserWorkerSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'email', 'username', 'password', 'is_admin']
+        fields = ['first_name', 'last_name', 'email', 'username', 'password']
         extra_kwargs = {
             'password': {'write_only': True}
         }
@@ -42,10 +43,10 @@ class WorkerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Worker
-        fields = ['id', 'tel', 'user', 'enterprise']
+        fields = ['id', 'tel', 'user', 'enterprise', 'is_admin']
 
     def to_representation(self, instance):
-        self.fields['user'] = UserWorkerSerializer(read_only=True)
+        self.fields['user'], self.fields['enterprise'] = UserWorkerSerializer(read_only=True), EnterpriseSerializer(read_only=True)
         return super(WorkerSerializer, self).to_representation(instance)
 
 
