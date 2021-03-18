@@ -54,3 +54,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subscription
         fields = '__all__'
+
+    def to_representation(self, instance):
+        self.fields['enterprise'], self.fields['client'] = EnterpriseSerializer(read_only=True), ClientSerializer(read_only=True)
+        return super(SubscriptionSerializer, self).to_representation(instance)

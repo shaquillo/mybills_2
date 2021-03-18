@@ -7,4 +7,4 @@ from . import serializers, models
 
 class BillViewset(viewsets.ModelViewSet):
     queryset = models.Bill.objects.all()
-    serializer_class = serializers.BillSerializer()
+    serializer_class = serializers.BillSerializer

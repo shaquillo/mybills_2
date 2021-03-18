@@ -243,7 +243,7 @@ class WorkerViewset(viewsets.ModelViewSet):
             return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class SubscriptionViewset(viewsets.ModelViewSet):
+class SubscriptionViewset(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.ListModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet):
     queryset = models.Subscription.objects.all()
     serializer_class = serializers.SubscriptionSerializer
 
@@ -257,6 +257,7 @@ class SubscriptionViewset(viewsets.ModelViewSet):
                 result['error'] = False
                 s_status = status.HTTP_200_OK
             else:
+                print(serializer.validated_data)
                 result['code'] = '02'
                 s_status = status.HTTP_500_INTERNAL_SERVER_ERROR
             return Response(result, status=s_status)
@@ -290,28 +291,28 @@ class SubscriptionViewset(viewsets.ModelViewSet):
             result['code'] = '05'
             return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    def update(self, request, *args, **kwargs):
-        result = {"error": True}
-
-        try:
-            instance = models.Subscription.objects.get(pk=kwargs['pk'])
-            serializer = serializers.SubscriptionSerializer(instance=instance, data=self.request.data)
-            if serializer.is_valid():
-                object = serializer.update(instance=instance, validated_data=serializer.validated_data)
-                result['error'] = False
-                result['data'] = serializers.SubscriptionSerializer(object).data
-                return Response(result, status=status.HTTP_200_OK)
-            else:
-                result['code'] = '01'
-                print('client invalid')
-
-            return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        except models.Subscription.DoesNotExist:
-            result['code'] = '03'
-            return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        except Exception:
-            result['code'] = '05'
-            return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    # def update(self, request, *args, **kwargs):
+    #     result = {"error": True}
+    #
+    #     try:
+    #         instance = models.Subscription.objects.get(pk=kwargs['pk'])
+    #         serializer = serializers.SubscriptionSerializer(instance=instance, data=self.request.data)
+    #         if serializer.is_valid():
+    #             object = serializer.update(instance=instance, validated_data=serializer.validated_data)
+    #             result['error'] = False
+    #             result['data'] = serializers.SubscriptionSerializer(object).data
+    #             return Response(result, status=status.HTTP_200_OK)
+    #         else:
+    #             result['code'] = '01'
+    #             print('client invalid')
+    #
+    #         return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    #     except models.Subscription.DoesNotExist:
+    #         result['code'] = '03'
+    #         return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    #     except Exception:
+    #         result['code'] = '05'
+    #         return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def destroy(self, request, *args, **kwargs):
         result = {"error": True}

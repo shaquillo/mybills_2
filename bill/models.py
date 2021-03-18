@@ -1,6 +1,5 @@
 from django.db import models
-from enterprise.models import Enterprise
-from profiles.models import Client
+from profiles.models import Subscription
 
 # Create your models here.
 
@@ -13,8 +12,7 @@ class Bill(models.Model):
     userReceptionDate = models.DateField(auto_now_add=True)
     paymentDateLimit = models.DateField()
     #image = models.ImageField()
-    enterprise = models.ForeignKey(Enterprise, on_delete=models.CASCADE)
-    client = models.ForeignKey(Client, on_delete=models.CASCADE)
+    subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE)
 
     class Meta:
         ordering = ['creationDate']
