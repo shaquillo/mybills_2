@@ -4,14 +4,16 @@ from django.contrib.auth.models import User
 from . import models
 from . import serializers
 from rest_framework.response import Response
+from django.db import transaction
 
 # Create your views here.
 
 
 class ClientViewset(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet):
     queryset = models.Client.objects.all()
-    serializer_class = serializers.ClientSerializer()
+    serializer_class = serializers.ClientSerializer
 
+    @transaction.atomic
     def create(self, request, *args, **kwargs):
         result = {"error": True}
 
@@ -54,6 +56,7 @@ class ClientViewset(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.U
             result['code'] = '05'
             return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    @transaction.atomic
     def update(self, request, *args, **kwargs):
         result = {"error": True}
 
@@ -79,9 +82,11 @@ class ClientViewset(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.U
             return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except models.User.DoesNotExist:
             result['code'] = '03'
+            result['data'] = 'user does not exist'
             return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except models.Client.DoesNotExist:
             result['code'] = '03'
+            result['data'] = 'client does not exist'
             return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception:
             result['code'] = '05'
@@ -91,9 +96,11 @@ class ClientViewset(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.U
         result = {"error": True}
         try:
             client = self.get_object()
-            client = client.delete()
-            result['error'] = False
             result['data'] = client.pk
+            user = User.objects.get(id=client.user.pk)
+            user.delete()
+            client.delete()
+            result['error'] = False
             return Response(result, status=status.HTTP_200_OK)
         except Exception:
             result['code'] = '05'
@@ -102,8 +109,9 @@ class ClientViewset(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.U
 
 class WorkerViewset(viewsets.ModelViewSet):
     queryset = models.Worker.objects.all()
-    serializer_class = serializers.WorkerSerializer()
+    serializer_class = serializers.WorkerSerializer
 
+    @transaction.atomic
     def create(self, request, *args, **kwargs):
         result = {"error": True}
 
@@ -141,6 +149,7 @@ class WorkerViewset(viewsets.ModelViewSet):
             result['code'] = '05'
             return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    @transaction.atomic
     def update(self, request, *args, **kwargs):
         result = {"error": True}
 
@@ -166,9 +175,11 @@ class WorkerViewset(viewsets.ModelViewSet):
             return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except models.User.DoesNotExist:
             result['code'] = '03'
+            result['data'] = 'user does not exist'
             return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except models.Worker.DoesNotExist:
             result['code'] = '03'
+            result['data'] = 'worker does not exist'
             return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception:
             result['code'] = '05'
@@ -178,9 +189,11 @@ class WorkerViewset(viewsets.ModelViewSet):
         result = {"error": True}
         try:
             worker = self.get_object()
-            worker = worker.delete()
-            result['error'] = False
             result['data'] = worker.pk
+            user = User.objects.get(id=worker.user.pk)
+            user.delete()
+            worker.delete()
+            result['error'] = False
             return Response(result, status=status.HTTP_200_OK)
         except Exception:
             result['code'] = '05'
@@ -262,9 +275,9 @@ class SubscriptionViewset(viewsets.ModelViewSet):
         result = {"error": True}
         try:
             object = self.get_object()
-            object = object.delete()
-            result['error'] = False
             result['data'] = object.pk
+            object.delete()
+            result['error'] = False
             return Response(result, status=status.HTTP_200_OK)
         except Exception:
             result['code'] = '05'

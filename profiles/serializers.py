@@ -7,14 +7,18 @@ class UserClientSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'first_name', 'last_name', 'email', 'username', 'password']
-        write_only_fields = ['password']
+        extra_kwargs = {
+            'password' : {'write_only': True}
+        }
 
 
 class UserWorkerSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'first_name', 'last_name', 'email', 'username', 'password', 'is_admin']
-        write_only_fields = ['password']
+        extra_kwargs = {
+            'password': {'write_only': True}
+        }
 
 
 class ClientSerializer(serializers.ModelSerializer):
