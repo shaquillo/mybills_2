@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from rest_framework import viewsets, mixins, status
-from django.contrib.auth.models import User
+
+from platforms.authentication import PlatformsAuthentication
 from . import models
 from . import serializers
 from rest_framework.response import Response
@@ -8,6 +9,11 @@ from django.db import transaction
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.permissions import AllowAny,IsAuthenticated
+
+import coreapi, coreschema
+from rest_framework.schemas import ManualSchema
+
+from rest_framework_simplejwt.views import TokenRefreshView
 
 # Create your views here.
 
@@ -27,49 +33,38 @@ class ClientViewset(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.U
     queryset = models.Client.objects.all()
     serializer_class = serializers.ClientSerializer
 
-    permission_classes = (ActionBasedPermission,)
+    authentication_classes = [PlatformsAuthentication]
+    permission_classes = (ActionBasedPermission, )
     action_permissions = {
         IsAuthenticated: ['update', 'retrieve', 'destroy'],
         AllowAny: ['create']
     }
 
-    @transaction.atomic
     def create(self, request, *args, **kwargs):
         result = {"error": True}
-        user = None
 
         try:
-            # self.request.data['user']['username'] = 'c_' + self.request.data['user']['username']
-            if User.objects.filter(username=self.request.data['user']['username']).exists():
+            if models.Client.objects.filter(username=self.request.data['username']).exists():
                 result['code'] = '04'
-                result['data'] = 'Account with username :' + self.request.data['user']['username'] + ' exists'
+                result['data'] = 'Account with username :' + self.request.data['username'] + ' exists'
                 return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            user = serializers.UserClientSerializer(data=self.request.data['user'])
-            if user.is_valid():
-                user = user.create(validated_data=user.validated_data)
-                client = serializers.ClientSerializer(data={'tel': self.request.data['tel'], 'user': user.id})
-                if client.is_valid():
-                    client = client.create(validated_data=client.validated_data)
-                    refresh = RefreshToken.for_user(user)
-                    result['token'] = {'refresh': str(refresh), 'access': str(refresh.access_token)}
-                    result['data'] = serializers.ClientSerializer(client).data
-                    # result['data']['user']['username'] = result['data']['user']['username'][2:]
-                    result['error'] = False
-                    creation_status = status.HTTP_200_OK
-                else:
-                    result['code'] = '01'
-                    result['data'] = 'invalid client'
-                    user.delete()
-                    creation_status = status.HTTP_500_INTERNAL_SERVER_ERROR
-                return Response(result, status=creation_status)
+            client = serializers.ClientSerializer(data=self.request.data)
+            if client.is_valid():
+                client = client.create(validated_data=client.validated_data)
+                refresh = RefreshToken.for_user(client)
+                result['token'] = {'refresh': str(refresh), 'access': str(refresh.access_token)}
+                result['data'] = serializers.ClientSerializer(client).data
+                # result['data']['user']['username'] = result['data']['user']['username'][2:]
+                result['error'] = False
+                creation_status = status.HTTP_200_OK
             else:
                 result['code'] = '01'
-                result['data'] = 'invalid user'
-                return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        except Exception:
+                result['data'] = 'invalid client'
+                creation_status = status.HTTP_500_INTERNAL_SERVER_ERROR
+            return Response(result, status=creation_status)
+        except Exception as e:
+            print(e)
             result['code'] = '05'
-            if user and isinstance(user, User):
-                user.delete()
             return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def retrieve(self, request, *args, **kwargs):
@@ -89,35 +84,20 @@ class ClientViewset(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.U
             result['code'] = '05'
             return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    @transaction.atomic
     def update(self, request, *args, **kwargs):
         result = {"error": True}
 
         try:
-            # self.request.data['user']['username'] = 'c_' + self.request.data['user']['username']
-            user1 = User.objects.get_by_natural_key(username=self.request.data['user']['username'])
-            user = serializers.UserClientSerializer(instance=user1, data=self.request.data['user'])
-            if user.is_valid():
-                client1 = models.Client.objects.get(pk = self.request.data['id'])
-                client = serializers.ClientSerializer(instance=client1, data={'tel': self.request.data['tel'], 'user': self.request.data['user']['id']})
-                if client.is_valid():
-                    user.update(instance=user1, validated_data=user.validated_data)
-                    client = client.update(instance=client1, validated_data=client.validated_data)
-                    result['error'] = False
-                    result['data'] = serializers.ClientSerializer(client).data
-                    return Response(result, status=status.HTTP_200_OK)
-
-                else:
-                    result['code'] = '01'
-                    print('client invalid')
+            client1 = self.get_object() # models.Client.objects.get(pk = self.request.data['id'])
+            client = serializers.ClientSerializer(instance=client1, data=self.request.data)
+            if client.is_valid():
+                client = client.update(instance=client1, validated_data=client.validated_data)
+                result['error'] = False
+                result['data'] = serializers.ClientSerializer(client).data
             else:
                 result['code'] = '01'
-                print('user invalid')
-            return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        except models.User.DoesNotExist:
-            result['code'] = '03'
-            result['data'] = 'user does not exist'
-            return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                print('client invalid')
+            return Response(result, status=status.HTTP_200_OK)
         except models.Client.DoesNotExist:
             result['code'] = '03'
             result['data'] = 'client does not exist'
@@ -131,8 +111,6 @@ class ClientViewset(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.U
         try:
             client = self.get_object()
             result['data'] = client.pk
-            user = User.objects.get(id=client.user.pk)
-            user.delete()
             client.delete()
             result['error'] = False
             return Response(result, status=status.HTTP_200_OK)
@@ -145,49 +123,37 @@ class WorkerViewset(viewsets.ModelViewSet):
     queryset = models.Worker.objects.all()
     serializer_class = serializers.WorkerSerializer
 
-    permission_classes = (ActionBasedPermission,)
+    authentication_classes = [PlatformsAuthentication]
+    permission_classes = (ActionBasedPermission, )
     action_permissions = {
-        IsAuthenticated: ['update', 'retrieve', 'destroy'],
+        IsAuthenticated: ['update', 'retrieve', 'destroy', 'list'],
         AllowAny: ['create']
     }
 
-    @transaction.atomic
     def create(self, request, *args, **kwargs):
         result = {"error": True}
-        user = None
 
         try:
-            # self.request.data['user']['username'] = 'w_' + self.request.data['user']['username']
-            if User.objects.filter(username=self.request.data['user']['username']).exists():
+            if models.Worker.objects.filter(username=self.request.data['username']).exists():
                 result['code'] = '04'
-                result['data'] = 'Account with username :' + self.request.data['user']['username'] + ' exists'
+                result['data'] = 'Account with username :' + self.request.data['username'] + ' exists'
                 return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            user = serializers.UserClientSerializer(data=self.request.data['user'])
-            if user.is_valid():
-                user = user.create(validated_data=user.validated_data)
-                worker = serializers.WorkerSerializer(data={'tel': self.request.data['tel'], 'user': user.id, 'enterprise': self.request.data['enterprise']})
-                if worker.is_valid():
-                    worker = worker.create(validated_data=worker.validated_data)
-                    result['data'] = serializers.WorkerSerializer(worker).data
-                    refresh = RefreshToken.for_user(user)
-                    result['token'] = {'refresh': str(refresh), 'access': str(refresh.access_token)}
-                    # result['data']['user']['username'] = result['data']['user']['username'][2:]
-                    result['error'] = False
-                    creation_status = status.HTTP_200_OK
-                else:
-                    result['code'] = '01'
-                    result['data'] = 'invalid worker'
-                    user.delete()
-                    creation_status = status.HTTP_500_INTERNAL_SERVER_ERROR
-                return Response(result, status=creation_status)
+            worker = serializers.WorkerSerializer(data=self.request.data)
+            if worker.is_valid():
+                worker = worker.create(validated_data=worker.validated_data)
+                refresh = RefreshToken.for_user(worker)
+                result['token'] = {'refresh': str(refresh), 'access': str(refresh.access_token)}
+                result['data'] = serializers.ClientSerializer(worker).data
+                result['error'] = False
+                creation_status = status.HTTP_200_OK
             else:
                 result['code'] = '01'
-                result['data'] = 'invalid user'
-                return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                result['data'] = 'invalid worker data'
+                creation_status = status.HTTP_500_INTERNAL_SERVER_ERROR
+            return Response(result, status=creation_status)
         except Exception:
-            if user and isinstance(user, User):
-                user.delete()
             result['code'] = '05'
+            return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def retrieve(self, request, *args, **kwargs):
         result = {"error": True}
@@ -221,35 +187,20 @@ class WorkerViewset(viewsets.ModelViewSet):
             result['error'] = False
             return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    @transaction.atomic
     def update(self, request, *args, **kwargs):
         result = {"error": True}
 
         try:
-            # self.request.data['user']['username'] = 'w_' + self.request.data['user']['username']
-            user1 = User.objects.get_by_natural_key(username=self.request.data['user']['username'])
-            user = serializers.UserClientSerializer(instance=user1, data=self.request.data['user'])
-            if user.is_valid():
-                worker1 = models.Worker.objects.get(pk=self.request.data['id'])
-                worker = serializers.WorkerSerializer(instance=worker1, data={'tel': self.request.data['tel'], 'user': self.request.data['user']['id'], 'enterprise': self.request.data['enterprise']})
-                if worker.is_valid():
-                    user.update(instance=user1, validated_data=user.validated_data)
-                    worker = worker.update(instance=worker1, validated_data=worker.validated_data)
-                    result['error'] = False
-                    result['data'] = serializers.WorkerSerializer(worker).data
-                    return Response(result, status=status.HTTP_200_OK)
-
-                else:
-                    result['code'] = '01'
-                    print('client invalid')
+            worker1 = self.get_object()  # models.Client.objects.get(pk = self.request.data['id'])
+            worker = serializers.ClientSerializer(instance=worker1, data=self.request.data)
+            if worker.is_valid():
+                worker = worker.update(instance=worker1, validated_data=worker.validated_data)
+                result['error'] = False
+                result['data'] = serializers.ClientSerializer(worker).data
             else:
                 result['code'] = '01'
-                print('user invalid')
-            return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        except models.User.DoesNotExist:
-            result['code'] = '03'
-            result['data'] = 'user does not exist'
-            return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                print('worker invalid')
+            return Response(result, status=status.HTTP_200_OK)
         except models.Worker.DoesNotExist:
             result['code'] = '03'
             result['data'] = 'worker does not exist'
@@ -263,8 +214,6 @@ class WorkerViewset(viewsets.ModelViewSet):
         try:
             worker = self.get_object()
             result['data'] = worker.pk
-            user = User.objects.get(id=worker.user.pk)
-            user.delete()
             worker.delete()
             result['error'] = False
             return Response(result, status=status.HTTP_200_OK)
@@ -276,7 +225,9 @@ class WorkerViewset(viewsets.ModelViewSet):
 class SubscriptionViewset(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.ListModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet):
     queryset = models.Subscription.objects.all()
     serializer_class = serializers.SubscriptionSerializer
-    permission_classes = [IsAuthenticated]
+
+    authentication_classes = [PlatformsAuthentication]
+    permission_classes = [IsAuthenticated, ]
 
     def create(self, request, *args, **kwargs):
         result = {'error': True}
@@ -359,8 +310,13 @@ class SubscriptionViewset(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mi
 
 
 class TOPViewset(TokenObtainPairView):
-    permission_classes = [AllowAny]
+    authentication_classes = [PlatformsAuthentication]
+    permission_classes =  [AllowAny]
     serializer_class = serializers.TOPSerializer
+
+
+class TokenRefreshViewM(TokenRefreshView):
+    authentication_classes = [PlatformsAuthentication]
 
 ### Code: description
 

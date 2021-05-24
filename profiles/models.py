@@ -5,21 +5,20 @@ from enterprise.models import Enterprise
 # Create your models here.
 
 
-class Client(models.Model):
+class Client(User):
     tel = models.CharField(max_length=9)
     telVerified = models.BooleanField(default=False)
     telCodeSend = models.BooleanField(default=False)
     telCode = models.CharField(max_length=10, default=None, null=True, blank=True)
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    # user = models.OneToOneField(User, on_delete=models.CASCADE)
     enterprises = models.ManyToManyField(Enterprise, through='Subscription', through_fields=('client', 'enterprise'))
 
     #image = models.ImageField()
 
 
-class Worker(models.Model):
+class Worker(User):
     tel = models.CharField(max_length=9)
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    is_admin = models.BooleanField(default=False)
+    is_admin_w = models.BooleanField(default=False)
     #image = models.ImageField()
     enterprise = models.ForeignKey(Enterprise, on_delete=models.CASCADE)
 

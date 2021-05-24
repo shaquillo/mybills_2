@@ -24,33 +24,11 @@ class UserClientSerializer(serializers.ModelSerializer):
         return make_password(value)
 
 
-class UserWorkerSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['first_name', 'last_name', 'email', 'username', 'password']
-        extra_kwargs = {
-            'password': {'write_only': True}
-        }
-
-    def validate_password(self, value: str) -> str:
-        """
-        Hash value passed by user.
-
-        :param value: password of a user
-        :return: a hashed version of the password
-        """
-        return make_password(value)
-
-
 class ClientSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Client
-        fields = ['id', 'tel', 'user'] # 'enterprises'
-
-    def to_representation(self, instance):
-        self.fields['user'] = UserClientSerializer(read_only=True)
-        return super(ClientSerializer, self).to_representation(instance)
+        fields = ['id', 'tel', 'username', 'password', 'first_name', 'last_name', 'email']
 
 
 class ClientCodeSerializer(serializers.ModelSerializer):
@@ -63,10 +41,10 @@ class WorkerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Worker
-        fields = ['id', 'tel', 'user', 'enterprise', 'is_admin']
+        fields = ['id', 'tel', 'username', 'password', 'first_name', 'last_name', 'email', 'enterprise', 'is_admin_w']
 
     def to_representation(self, instance):
-        self.fields['user'], self.fields['enterprise'] = UserWorkerSerializer(read_only=True), EnterpriseSerializer(read_only=True)
+        self.fields['enterprise'] = EnterpriseSerializer(read_only=True)
         return super(WorkerSerializer, self).to_representation(instance)
 
 

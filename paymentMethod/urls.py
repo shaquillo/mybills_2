@@ -4,7 +4,7 @@ from . import views
 
 router = DefaultRouter()
 
-router.register(r'payment_method', views.PaymentMethodViewset)
+router.register('', views.PaymentMethodViewset)
 
 urlpatterns = [
     path('', include(router.urls))

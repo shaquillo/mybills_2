@@ -25,7 +25,7 @@ SECRET_KEY = '2_b+8i*=8b)a!^1b=w-(&7)5y4w32-x7whv_^hcq)crt(d$b1b'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -41,7 +41,8 @@ INSTALLED_APPS = [
     'paymentMethod',
     'bill',
     'enterprise',
-    'profiles'
+    'profiles',
+    'platforms',
 ]
 
 MIDDLEWARE = [
@@ -55,10 +56,12 @@ MIDDLEWARE = [
 ]
 
 REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication'
     ]
 }
+## Could directly platform authentication class, but did not add here because it will allow user profile creation without platform credentials provided
 
 ROOT_URLCONF = 'bills_api.urls'
 
@@ -90,6 +93,9 @@ DATABASES = {
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
+
+## User used for authentication, using this for new user class i.e redifined user class
+# AUTH_USER_MODEL = 'profiles.User'
 
 
 # Password validation
@@ -129,3 +135,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
+MEDIA_URL = '/media/'
+
+MEDIA_ROOT = BASE_DIR + '/files/media'
+STATIC_ROOT = BASE_DIR + '/files/static'

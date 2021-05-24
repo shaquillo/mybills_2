@@ -15,11 +15,17 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf.urls import url
+from rest_framework.documentation import include_docs_urls
+# from rest_framework.schemas import get_schema_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('bill/', include('bill.urls')),
     path('enterprise/', include('enterprise.urls')),
     path('payment_method/', include('paymentMethod.urls')),
-    path('profiles/', include('profiles.urls'))
+    path('profiles/', include('profiles.urls')),
+    path('platforms/', include('platforms.urls')),
+    # url(r'^$', schema_view)
+    path('', include_docs_urls(title='MyBills'))
 ]
