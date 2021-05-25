@@ -12,14 +12,13 @@ class Client(User):
     telCode = models.CharField(max_length=10, default=None, null=True, blank=True)
     # user = models.OneToOneField(User, on_delete=models.CASCADE)
     enterprises = models.ManyToManyField(Enterprise, through='Subscription', through_fields=('client', 'enterprise'))
-
-    #image = models.ImageField()
+    image = models.ImageField(upload_to='client_profile', null=True, blank=True)
 
 
 class Worker(User):
     tel = models.CharField(max_length=9)
     is_admin_w = models.BooleanField(default=False)
-    #image = models.ImageField()
+    image = models.ImageField(upload_to='worker_profile', null=True, blank=True)
     enterprise = models.ForeignKey(Enterprise, on_delete=models.CASCADE)
 
 

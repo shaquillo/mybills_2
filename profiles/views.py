@@ -123,6 +123,8 @@ class WorkerViewset(viewsets.ModelViewSet):
     queryset = models.Worker.objects.all()
     serializer_class = serializers.WorkerSerializer
 
+    sep = '*~*'
+
     authentication_classes = [PlatformsAuthentication]
     permission_classes = (ActionBasedPermission, )
     action_permissions = {
@@ -134,16 +136,21 @@ class WorkerViewset(viewsets.ModelViewSet):
         result = {"error": True}
 
         try:
-            if models.Worker.objects.filter(username=self.request.data['username']).exists():
+            enterprise_name = models.Enterprise.objects.get(pk=self.request.data['enterprise']).title
+            data = self.request.data
+
+            data['username'] = enterprise_name + WorkerViewset.sep + data['username']
+            if models.Worker.objects.filter(username=data['username']).exists():
                 result['code'] = '04'
                 result['data'] = 'Account with username :' + self.request.data['username'] + ' exists'
                 return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            worker = serializers.WorkerSerializer(data=self.request.data)
+            worker = serializers.WorkerSerializer(data=data)
             if worker.is_valid():
                 worker = worker.create(validated_data=worker.validated_data)
                 refresh = RefreshToken.for_user(worker)
                 result['token'] = {'refresh': str(refresh), 'access': str(refresh.access_token)}
                 result['data'] = serializers.ClientSerializer(worker).data
+                result['data']['username'] = self.__get_username_w(result['data']['username'])
                 result['error'] = False
                 creation_status = status.HTTP_200_OK
             else:
@@ -162,7 +169,7 @@ class WorkerViewset(viewsets.ModelViewSet):
             worker = self.get_object()
             worker_serializer = self.get_serializer(worker)
             result['data'] = worker_serializer.data
-            # result['data']['user']['username'] = result['data']['user']['username'][2:]
+            result['data']['username'] = self.__get_username_w(result['data']['user']['username'])
             result['error'] = False
             return Response(result, status=status.HTTP_200_OK)
         except models.Worker.DoesNotExist:
@@ -179,8 +186,8 @@ class WorkerViewset(viewsets.ModelViewSet):
             workers = self.get_queryset()
             worker_serializer = serializers.WorkerSerializer(workers, many=True)
             result['data'] = worker_serializer.data
-            # for i in range(len(result['data'])):
-            #     result['data'][i]['user']['username'] = result['data'][i]['user']['username'][2:]
+            for i in range(len(result['data'])):
+                result['data'][i]['username'] = self.__get_username_w(result['data']['user']['username'])
             return Response(result, status=status.HTTP_200_OK)
         except Exception:
             result['code'] = '05'
@@ -192,7 +199,11 @@ class WorkerViewset(viewsets.ModelViewSet):
 
         try:
             worker1 = self.get_object()  # models.Client.objects.get(pk = self.request.data['id'])
-            worker = serializers.ClientSerializer(instance=worker1, data=self.request.data)
+            enterprise_name = models.Enterprise.objects.get(pk=self.request.data['enterprise']).title
+            data = self.request.data
+
+            data['username'] = enterprise_name + WorkerViewset.sep + data['username']
+            worker = serializers.ClientSerializer(instance=worker1, data=data)
             if worker.is_valid():
                 worker = worker.update(instance=worker1, validated_data=worker.validated_data)
                 result['error'] = False
@@ -220,6 +231,10 @@ class WorkerViewset(viewsets.ModelViewSet):
         except Exception:
             result['code'] = '05'
             return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def __get_username_w(self, username):
+        i = username.find(WorkerViewset.sep)
+        return username[i+len(WorkerViewset.sep):]
 
 
 class SubscriptionViewset(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.ListModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet):

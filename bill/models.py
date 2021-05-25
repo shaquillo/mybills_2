@@ -11,7 +11,7 @@ class Bill(models.Model):
     creationDate = models.DateTimeField(auto_now_add=True)
     userReceptionDate = models.DateField(auto_now_add=True)
     paymentDateLimit = models.DateField()
-    #image = models.ImageField()
+    image = models.ImageField(upload_to='bills', null=True, blank=True)
     subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE)
 
     class Meta:

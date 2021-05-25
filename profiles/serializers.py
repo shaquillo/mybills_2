@@ -28,7 +28,7 @@ class ClientSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Client
-        fields = ['id', 'tel', 'username', 'password', 'first_name', 'last_name', 'email']
+        fields = ['id', 'tel', 'username', 'password', 'first_name', 'last_name', 'email', 'image']
 
 
 class ClientCodeSerializer(serializers.ModelSerializer):
@@ -41,7 +41,7 @@ class WorkerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Worker
-        fields = ['id', 'tel', 'username', 'password', 'first_name', 'last_name', 'email', 'enterprise', 'is_admin_w']
+        fields = ['id', 'tel', 'username', 'password', 'first_name', 'last_name', 'email', 'enterprise', 'is_admin_w', 'image']
 
     def to_representation(self, instance):
         self.fields['enterprise'] = EnterpriseSerializer(read_only=True)
