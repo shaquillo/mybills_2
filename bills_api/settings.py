@@ -28,9 +28,13 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = bool(int(env('DEBUG')))
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = []
+ALLOWED_HOSTS_ENV = env('ALLOWED_HOSTS')
+
+if ALLOWED_HOSTS_ENV:
+    ALLOWED_HOSTS.extend(ALLOWED_HOSTS_ENV.split(','))
 
 
 # Application definition
@@ -95,7 +99,11 @@ WSGI_APPLICATION = 'bills_api.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': env('DATABASE_ENGINE'),
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'NAME': env('DATABASE_NAME'),
+        'USER': env('DATABASE_USER'),
+        'PASSWORD': env('DATABASE_PASSWORD'),
+        'HOST': env('DATABASE_HOST'),
+        'PORT': env('DATABASE_PORT'),
     }
 }
 
@@ -139,8 +147,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
-STATIC_URL = '/static/'
-MEDIA_URL = '/media/'
+STATIC_URL = '/static/static/'
+MEDIA_URL = '/static/media/'
 
-MEDIA_ROOT = BASE_DIR + '/files/media'
+MEDIA_ROOT =  BASE_DIR + '/files/media'
 STATIC_ROOT = BASE_DIR + '/files/static'
